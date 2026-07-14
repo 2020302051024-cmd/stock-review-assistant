@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from io import BytesIO
 from datetime import date
 
+import pandas as pd
 import streamlit as st
 
 from database.db import init_db
@@ -9,10 +11,13 @@ from services.auth_service import require_login
 from services.portfolio_service import (
     VALID_MARKETS,
     add_holding,
+    batch_add_holdings,
+    build_import_template_dataframe,
     delete_holding,
     get_holding,
     holdings_dataframe,
     list_holdings,
+    normalize_import_dataframe,
     update_holding,
 )
 
@@ -22,7 +27,7 @@ init_db()
 require_login()
 
 st.title("🗂️ 持仓管理")
-st.caption("手动维护你的股票持仓。这里不连接券商账户，也不会执行交易。")
+st.caption("维护你的股票持仓。这里不连接券商账户，也不会执行交易。")
 
 if "add_form_version" not in st.session_state:
     st.session_state["add_form_version"] = 0
@@ -90,7 +95,29 @@ def holding_form(prefix: str, initial: dict | None = None) -> dict:
     }
 
 
-tab_add, tab_edit, tab_delete, tab_list = st.tabs(["新增", "修改", "删除", "查看"])
+def read_uploaded_holdings(uploaded_file) -> pd.DataFrame:
+    filename = uploaded_file.name.lower()
+    if filename.endswith(".csv"):
+        content = uploaded_file.getvalue()
+        for encoding in ["utf-8-sig", "utf-8", "gbk"]:
+            try:
+                return pd.read_csv(BytesIO(content), encoding=encoding, dtype={"股票代码": str, "stock_code": str})
+            except UnicodeDecodeError:
+                continue
+        raise ValueError("CSV 编码无法识别，请另存为 UTF-8 或使用模板重新填写。")
+    if filename.endswith((".xlsx", ".xlsm")):
+        return pd.read_excel(uploaded_file, dtype={"股票代码": str, "stock_code": str})
+    raise ValueError("仅支持 CSV、XLSX 或 XLSM 文件。")
+
+
+def build_excel_template_bytes(template_df: pd.DataFrame) -> bytes:
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        template_df.to_excel(writer, index=False, sheet_name="持仓导入模板")
+    return output.getvalue()
+
+
+tab_add, tab_import, tab_edit, tab_delete, tab_list = st.tabs(["新增", "批量导入", "修改", "删除", "查看"])
 
 with tab_add:
     with st.form("add_holding_form"):
@@ -104,6 +131,55 @@ with tab_add:
             st.rerun()
         except Exception as exc:
             st.error(f"新增失败：{exc}")
+
+with tab_import:
+    st.subheader("📥 表格批量导入")
+    st.caption("适合一次录入多只股票。导入只写入本系统数据库，不会连接券商或执行交易。")
+
+    template_df = build_import_template_dataframe()
+    col_tpl1, col_tpl2 = st.columns(2)
+    col_tpl1.download_button(
+        "下载 Excel 模板",
+        data=build_excel_template_bytes(template_df),
+        file_name="stock_holdings_template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        use_container_width=True,
+    )
+    col_tpl2.download_button(
+        "下载 CSV 模板",
+        data=template_df.to_csv(index=False).encode("utf-8-sig"),
+        file_name="stock_holdings_template.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+
+    with st.expander("模板字段说明", expanded=False):
+        st.write(
+            "- 必填：股票代码、股票名称、买入价格、持仓数量、买入日期。\n"
+            "- 可选：所属市场、所属行业、投资逻辑、重点监控、备注。\n"
+            "- 所属市场为空时默认 A股；重点监控可填 是/否、1/0、true/false。\n"
+            "- 同一股票可以导入多行，用于记录不同买入批次。"
+        )
+        st.dataframe(template_df, width="stretch", hide_index=True)
+
+    uploaded_file = st.file_uploader("上传填写好的持仓表格", type=["csv", "xlsx", "xlsm"])
+    if uploaded_file is not None:
+        try:
+            raw_df = read_uploaded_holdings(uploaded_file)
+            preview_df = normalize_import_dataframe(raw_df)
+            st.success(f"已识别 {len(preview_df)} 行待导入数据。")
+            st.dataframe(preview_df, width="stretch", hide_index=True)
+            if st.button("确认导入这些持仓", type="primary"):
+                result = batch_add_holdings(raw_df)
+                success_count = len(result["successes"])
+                error_count = len(result["errors"])
+                if success_count:
+                    st.success(f"成功导入 {success_count} 条持仓。")
+                if error_count:
+                    st.warning(f"{error_count} 行导入失败，请按错误提示修改后重新导入。")
+                    st.dataframe(pd.DataFrame(result["errors"]), width="stretch", hide_index=True)
+        except Exception as exc:
+            st.error(f"表格读取或校验失败：{exc}")
 
 with tab_edit:
     holdings = list_holdings()

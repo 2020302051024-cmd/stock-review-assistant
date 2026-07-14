@@ -7,6 +7,7 @@ from services.deepseek_service import DeepSeekClient, DeepSeekError
 from services.indicator_service import analyze_kline
 from services.market_data import get_daily_kline
 from services.portfolio_service import VALID_MARKETS, list_holdings
+from utils.charts import build_kline_figure
 from utils.formatters import format_percent
 
 
@@ -35,6 +36,7 @@ market = col2.selectbox(
     index=VALID_MARKETS.index(default_market) if default_market in VALID_MARKETS else 0,
 )
 days = col3.slider("K线天数", min_value=60, max_value=360, value=180, step=30)
+ma_windows = st.multiselect("显示均线", [5, 10, 20, 60], default=[5, 10, 20, 60])
 
 if st.button("开始分析", type="primary"):
     if not stock_code.strip():
@@ -70,15 +72,19 @@ if analysis:
 
     st.success(f"行情来源：{analysis['source']}")
 
-    chart_df = analyzed.set_index("date")[["close", "ma5", "ma10", "ma20", "ma60"]]
-    st.subheader("📉 价格与均线")
-    st.line_chart(chart_df)
-
     col_a, col_b, col_c, col_d = st.columns(4)
     col_a.metric("当前价", f"{signals['current_price']:.2f}")
     col_b.metric("MACD", f"{signals['macd']:.4f}" if signals["macd"] is not None else "-")
     col_c.metric("RSI", f"{signals['rsi']:.2f}" if signals["rsi"] is not None else "-")
     col_d.metric("近5日涨幅", format_percent(signals["five_day_return"]))
+
+    st.subheader("📈 K线走势")
+    st.caption("红色代表上涨，绿色代表下跌。鼠标悬停可查看同一天的价格、成交量、MACD 和 RSI。")
+    st.plotly_chart(
+        build_kline_figure(analyzed, ma_windows),
+        use_container_width=True,
+        config={"displaylogo": False},
+    )
 
     st.subheader("📍 均线位置")
     ma_cols = st.columns(4)
