@@ -1,0 +1,69 @@
+HOLDINGS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS holdings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    stock_code TEXT NOT NULL,
+    stock_name TEXT NOT NULL,
+    market TEXT NOT NULL,
+    buy_price REAL NOT NULL CHECK (buy_price >= 0),
+    quantity INTEGER NOT NULL CHECK (quantity >= 0),
+    buy_date TEXT NOT NULL,
+    industry TEXT DEFAULT '',
+    investment_logic TEXT DEFAULT '',
+    is_watchlist INTEGER NOT NULL DEFAULT 0,
+    note TEXT DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+
+REPORTS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS ai_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    report_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    source_text TEXT DEFAULT '',
+    ai_result TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+
+APP_SETTINGS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+
+APP_CACHE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS app_cache (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+
+APP_USERS_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS app_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+
+ALL_TABLES_SQL = [
+    HOLDINGS_TABLE_SQL,
+    REPORTS_TABLE_SQL,
+    APP_SETTINGS_TABLE_SQL,
+    APP_CACHE_TABLE_SQL,
+    APP_USERS_TABLE_SQL,
+]
