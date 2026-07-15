@@ -5,25 +5,30 @@ from html import escape
 import streamlit as st
 
 
-def apply_app_style() -> None:
-    """Apply one restrained, high-contrast visual system across all pages."""
+def apply_app_style(page_tone: str = "neutral") -> None:
+    """Apply the shared warm-neutral visual system across all pages."""
     st.markdown(
         """
         <style>
         :root {
-            --ink: #22272d;
-            --ink-soft: #3f4a54;
-            --muted: #697681;
-            --line: #dce1e5;
-            --line-strong: #c8d0d7;
-            --paper: #ffffff;
-            --canvas: #f5f7f8;
-            --blue: #245f8f;
-            --blue-dark: #19486d;
-            --blue-soft: #edf4f8;
-            --danger: #9e3430;
-            --warning: #7b5619;
-            --success: #27684f;
+            --ink: #3d3a35;
+            --ink-soft: #5b5650;
+            --muted: #7d766d;
+            --line: #e1dbd1;
+            --line-strong: #cec4b6;
+            --paper: #fffdf8;
+            --canvas: #f4f1ea;
+            --wood: #88715b;
+            --wood-dark: #6f5c4a;
+            --wood-soft: #eee7dc;
+            --action: var(--wood);
+            --action-dark: var(--wood-dark);
+            --action-soft: var(--wood-soft);
+            --danger: #9a4e48;
+            --danger-dark: #7f3f3a;
+            --danger-soft: #f3e5e1;
+            --warning: #826733;
+            --success: #58745e;
         }
 
         html, body, [class*="css"] {
@@ -38,9 +43,14 @@ def apply_app_style() -> None:
             max-width: 1260px;
             padding-top: 2.25rem;
             padding-bottom: 4.5rem;
+            animation: quiet-enter .28s ease-out both;
+        }
+        @keyframes quiet-enter {
+            from { opacity: 0; transform: translateY(3px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         [data-testid="stSidebar"] {
-            background: var(--paper);
+            background: #faf7f0;
             border-right: 1px solid var(--line);
         }
         [data-testid="stSidebarContent"] { padding-top: 1.1rem; }
@@ -55,13 +65,13 @@ def apply_app_style() -> None:
             transition: background-color .15s ease, border-color .15s ease;
         }
         [data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
-            background: #f1f4f6;
+            background: #f1ece3;
             border-left-color: var(--line-strong);
             color: var(--ink) !important;
         }
         [data-testid="stSidebar"] [data-testid="stPageLink"] a[aria-current="page"] {
-            background: var(--blue-soft);
-            border-left-color: var(--blue);
+            background: var(--action-soft);
+            border-left-color: var(--action);
             color: var(--ink) !important;
             font-weight: 680;
         }
@@ -79,7 +89,7 @@ def apply_app_style() -> None:
             display: grid;
             place-items: center;
             color: #ffffff;
-            background: var(--blue);
+            background: var(--action);
             border-radius: 2px;
             font-size: 15px;
             font-weight: 760;
@@ -112,7 +122,7 @@ def apply_app_style() -> None:
             display: grid;
             place-items: center;
             background: var(--paper);
-            color: var(--blue-dark);
+            color: var(--action-dark);
             border: 1px solid var(--line-strong);
             border-radius: 2px;
             font-size: 19px;
@@ -159,8 +169,8 @@ def apply_app_style() -> None:
         [data-testid="stMetric"] {
             background: var(--paper);
             border: 1px solid var(--line);
-            border-top: 3px solid var(--blue);
-            border-radius: 2px;
+            border-top: 2px solid var(--action);
+            border-radius: 4px;
             padding: 15px 17px 16px;
             min-height: 106px;
             box-shadow: none;
@@ -177,16 +187,16 @@ def apply_app_style() -> None:
         [data-testid="stForm"] {
             background: var(--paper);
             border: 1px solid var(--line);
-            border-radius: 2px;
+            border-radius: 4px;
             padding: 22px;
         }
         [data-testid="stExpander"] {
             background: var(--paper);
             border: 1px solid var(--line);
-            border-radius: 2px;
+            border-radius: 4px;
             overflow: hidden;
         }
-        [data-testid="stExpander"] summary:hover { background: #f7f9fa; }
+        [data-testid="stExpander"] summary:hover { background: #f7f3ec; }
         [data-baseweb="tab-list"] {
             gap: 22px;
             background: transparent;
@@ -203,7 +213,7 @@ def apply_app_style() -> None:
         [aria-selected="true"][data-baseweb="tab"] {
             background: transparent;
             box-shadow: none;
-            border-bottom-color: var(--blue);
+            border-bottom-color: var(--action);
         }
         [aria-selected="true"][data-baseweb="tab"] p { color: var(--ink) !important; }
         [data-baseweb="tab-highlight"] { display: none; }
@@ -225,24 +235,24 @@ def apply_app_style() -> None:
         }
         .stButton > button:hover, .stDownloadButton > button:hover,
         [data-testid="stFormSubmitButton"] > button:hover {
-            background: #f0f3f5 !important;
-            border-color: #9da9b3 !important;
+            background: #f1ede5 !important;
+            border-color: #b8ad9e !important;
             color: var(--ink) !important;
         }
         button[kind^="primary"] {
-            background: var(--blue) !important;
-            border-color: var(--blue) !important;
+            background: var(--action) !important;
+            border-color: var(--action) !important;
             color: #ffffff !important;
         }
         button[kind^="primary"]:hover {
-            background: var(--blue-dark) !important;
-            border-color: var(--blue-dark) !important;
+            background: var(--action-dark) !important;
+            border-color: var(--action-dark) !important;
             color: #ffffff !important;
         }
         button:disabled, button:disabled * {
-            background: #eef1f3 !important;
+            background: #ece8e0 !important;
             border-color: var(--line) !important;
-            color: #929ca5 !important;
+            color: #9a9389 !important;
         }
 
         input, textarea, [data-baseweb="select"] > div,
@@ -254,8 +264,8 @@ def apply_app_style() -> None:
         }
         input, textarea, [data-baseweb="select"] * { color: var(--ink) !important; }
         input:focus, textarea:focus {
-            border-color: var(--blue) !important;
-            box-shadow: 0 0 0 1px var(--blue) !important;
+            border-color: var(--action) !important;
+            box-shadow: 0 0 0 1px var(--action) !important;
         }
         [data-testid="stDataFrame"] {
             background: var(--paper);
@@ -270,8 +280,24 @@ def apply_app_style() -> None:
         }
         [data-testid="stAlert"] * { color: var(--ink-soft) !important; }
         [data-testid="stAlert"] [data-testid="stMarkdownContainer"] p { color: inherit !important; }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentInfo"]) {
+            background: #eeebe4 !important;
+            border: 1px solid #ddd6cb !important;
+        }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentWarning"]) {
+            background: #f3eddd !important;
+            border: 1px solid #dfd1ab !important;
+        }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentError"]) {
+            background: var(--danger-soft) !important;
+            border: 1px solid #ddc2bd !important;
+        }
+        [data-testid="stAlertContainer"]:has([data-testid="stAlertContentSuccess"]) {
+            background: #e8eee7 !important;
+            border: 1px solid #cad7c8 !important;
+        }
         hr { border-color: var(--line) !important; }
-        a { color: var(--blue-dark); }
+        a { color: var(--action-dark); }
 
         .data-freshness {
             display: inline-flex;
@@ -285,7 +311,7 @@ def apply_app_style() -> None:
             font-size: 13px;
             margin-bottom: 14px;
         }
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--action); }
 
         @media (max-width: 760px) {
             [data-testid="stMainBlockContainer"] { padding: 1.1rem 1rem 3rem; }
@@ -297,16 +323,41 @@ def apply_app_style() -> None:
             [data-baseweb="tab"] { padding: 0 1px; font-size: 13px; white-space: nowrap; }
             [data-testid="stForm"] { padding: 16px; }
         }
+        @media (prefers-reduced-motion: reduce) {
+            [data-testid="stMainBlockContainer"] { animation: none; }
+            * { transition-duration: 0.01ms !important; }
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
+    if page_tone == "danger":
+        st.markdown(
+            """
+            <style>
+            .stApp {
+                --action: var(--danger);
+                --action-dark: var(--danger-dark);
+                --action-soft: var(--danger-soft);
+            }
+            .app-page-header--danger { border-bottom-color: #ddc2bd; }
+            .app-page-header--danger .app-page-icon {
+                color: var(--danger-dark);
+                background: var(--danger-soft);
+                border-color: #ddc2bd;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
 
-def render_page_header(title: str, subtitle: str, icon: str) -> None:
+
+def render_page_header(title: str, subtitle: str, icon: str, tone: str = "neutral") -> None:
+    tone_class = " app-page-header--danger" if tone == "danger" else ""
     st.markdown(
         f"""
-        <div class="app-page-header">
+        <div class="app-page-header{tone_class}">
           <div class="app-page-title-wrap">
             <div class="app-page-icon">{escape(icon)}</div>
             <div>

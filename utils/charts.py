@@ -5,13 +5,13 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
-UP_COLOR = "#ef4444"
-DOWN_COLOR = "#16a34a"
+UP_COLOR = "#c65a54"
+DOWN_COLOR = "#568367"
 MA_COLORS = {
-    "ma5": "#d69b2d",
-    "ma10": "#2b6f9f",
-    "ma20": "#5e86a3",
-    "ma60": "#7d8790",
+    "ma5": "#b28a4b",
+    "ma10": "#7d8564",
+    "ma20": "#a56f5d",
+    "ma60": "#74736d",
 }
 
 
@@ -60,7 +60,7 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
                     y=chart_df[column],
                     mode="lines",
                     name=f"MA{window}",
-                    line={"width": 1.4, "color": MA_COLORS.get(column, "#475569")},
+                    line={"width": 1.4, "color": MA_COLORS.get(column, "#6f6a62")},
                 ),
                 row=1,
                 col=1,
@@ -95,7 +95,7 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
             y=chart_df["dif"],
             mode="lines",
             name="DIF",
-            line={"width": 1.3, "color": "#2b6f9f"},
+            line={"width": 1.3, "color": "#6f6256"},
         ),
         row=3,
         col=1,
@@ -106,7 +106,7 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
             y=chart_df["dea"],
             mode="lines",
             name="DEA",
-            line={"width": 1.3, "color": "#f59e0b"},
+            line={"width": 1.3, "color": "#b28a4b"},
         ),
         row=3,
         col=1,
@@ -118,13 +118,13 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
             y=chart_df["rsi"],
             mode="lines",
             name="RSI",
-            line={"width": 1.5, "color": "#245f8f"},
+            line={"width": 1.5, "color": "#8b6f5b"},
         ),
         row=4,
         col=1,
     )
-    fig.add_hline(y=70, line_dash="dot", line_color="#94a3b8", row=4, col=1)
-    fig.add_hline(y=30, line_dash="dot", line_color="#94a3b8", row=4, col=1)
+    fig.add_hline(y=70, line_dash="dot", line_color="#aaa095", row=4, col=1)
+    fig.add_hline(y=30, line_dash="dot", line_color="#aaa095", row=4, col=1)
 
     fig.update_layout(
         height=820,
@@ -133,15 +133,18 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "xanchor": "left", "x": 0},
         xaxis_rangeslider_visible=False,
         template="plotly_white",
+        paper_bgcolor="#fffdf8",
+        plot_bgcolor="#fffdf8",
+        font={"color": "#5b5650"},
     )
     fig.update_xaxes(
         showspikes=True,
         spikemode="across",
         spikesnap="cursor",
-        spikecolor="#94a3b8",
+        spikecolor="#aaa095",
         spikethickness=1,
     )
-    fig.update_yaxes(showgrid=True, gridcolor="#e5e7eb", fixedrange=False)
+    fig.update_yaxes(showgrid=True, gridcolor="#e7e0d5", fixedrange=False)
     fig.update_yaxes(title_text="价格", row=1, col=1)
     fig.update_yaxes(title_text="量", row=2, col=1)
     fig.update_yaxes(title_text="MACD", row=3, col=1)

@@ -217,11 +217,16 @@ def _render_text_scan_tab(holdings: list[dict]) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="暴雷风险中心", layout="wide")
-    apply_app_style()
+    apply_app_style(page_tone="danger")
     init_db()
     require_login()
 
-    render_page_header("暴雷风险中心", "集中检查仓位、行业集中度、K线和公告文本风险，只提供风险依据。", "!")
+    render_page_header(
+        "暴雷风险中心",
+        "集中检查仓位、行业集中度、K线和公告文本风险，只提供风险依据。",
+        "!",
+        tone="danger",
+    )
 
     holdings = list_holdings()
     if not holdings:
