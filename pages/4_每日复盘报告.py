@@ -8,14 +8,15 @@ from services.deepseek_service import DeepSeekClient, DeepSeekError
 from services.portfolio_service import list_holdings
 from services.report_service import list_ai_reports
 from utils.formatters import format_money, format_percent
+from utils.ui import apply_app_style, render_page_header
 
 
 st.set_page_config(page_title="每日复盘报告", layout="wide")
+apply_app_style()
 init_db()
 require_login()
 
-st.title("📋 每日复盘报告")
-st.caption("历史报告优先展示。新报告按需生成，不在打开页面时自动加载行情。")
+render_page_header("每日复盘报告", "先读历史，再按需生成；打开页面不会自动请求行情或 DeepSeek。", "▣")
 
 client = DeepSeekClient()
 holdings = list_holdings()
@@ -26,7 +27,7 @@ if not holdings:
 
 reports = list_ai_reports("daily_review", limit=30)
 
-st.subheader("📚 历史复盘")
+st.subheader("历史复盘")
 if not reports:
     st.info("暂无历史复盘。你可以在下方生成第一份报告。")
 else:
@@ -41,7 +42,7 @@ else:
                 st.markdown(report["ai_result"])
 
 st.divider()
-st.subheader("❓ 向 DeepSeek 追问")
+st.subheader("向 DeepSeek 追问")
 qa_source_options = ["使用最新历史报告", "重新构建当前持仓上下文"]
 qa_source = st.radio("回答依据", qa_source_options, horizontal=True)
 question = st.text_area(
@@ -76,7 +77,7 @@ if st.button("让 DeepSeek 回答我的问题"):
             st.error(f"回答失败：{exc}")
 
 st.divider()
-st.subheader("🧾 生成新复盘")
+st.subheader("生成新复盘")
 st.caption("生成新报告会拉取行情和K线，可能需要一些时间。历史报告不受影响。")
 
 fetch_market_price = st.checkbox("自动获取当前行情", value=True)

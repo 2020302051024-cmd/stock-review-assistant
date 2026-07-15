@@ -12,6 +12,7 @@ from services.portfolio_service import list_holdings
 from services.push_service import PushError, send_wechat_push
 from services.risk_service import risk_items_to_markdown
 from utils.formatters import format_money, format_percent
+from utils.ui import apply_app_style, render_data_freshness, render_page_header
 
 
 DASHBOARD_CACHE_KEY = "dashboard_snapshot"
@@ -23,68 +24,66 @@ def main() -> None:
     init_db()
     require_login()
 
-    st.title("📊 风险仪表盘")
-    st.caption("首页默认显示上次刷新结果，避免每次打开都拉行情。需要新数据时点击刷新。")
+    render_page_header("风险仪表盘", "先看风险，再看盈亏。首页读取最近缓存，不会在打开时重复请求行情。", "⌂")
+    if st.session_state.get("dashboard_refresh_message"):
+        st.success(st.session_state.pop("dashboard_refresh_message"))
 
     holdings = list_holdings()
     if not holdings:
         st.info("还没有录入持仓。请先到“持仓管理”页面新增你的第一只股票。")
         return
 
-    st.subheader("🚨 暴雷风险提醒")
-    col_a, col_b = st.columns([1, 1])
-    fetch_market_price = col_a.checkbox("刷新时获取当前行情", value=True)
-    include_kline = col_b.checkbox("刷新时检查 K线风险", value=True)
-    total_assets = st.number_input(
-        "账户总资产，可选。填写后可判断总股票仓位是否超过 70%",
-        min_value=0.0,
-        value=0.0,
-        step=1000.0,
-    )
-
-    manual_prices = {}
-    with st.expander("手动输入当前价格兜底"):
-        st.caption("当行情源暂时不可用时，可以手动填写当前价后刷新。")
-        for holding in holdings:
-            manual_value = st.number_input(
-                f"{holding['stock_name']} ({holding['stock_code']}) 当前价",
-                min_value=0.0,
-                value=0.0,
-                step=0.01,
-                key=f"manual_price_{holding['id']}",
-            )
-            if manual_value > 0:
-                manual_prices[int(holding["id"])] = manual_value
-
-    col_refresh, col_hint = st.columns([1, 2])
-    if col_refresh.button("🔄 刷新风险数据", type="primary"):
-        with st.spinner("正在拉取行情并计算风险..."):
-            snapshot = build_dashboard_snapshot(
-                manual_prices=manual_prices,
-                fetch_market_price=fetch_market_price,
-                include_kline=include_kline,
-                total_assets=total_assets if total_assets > 0 else None,
-            )
-            set_json_cache(DASHBOARD_CACHE_KEY, snapshot)
-        st.success("风险数据已刷新。")
-
     cache = get_json_cache(DASHBOARD_CACHE_KEY)
-    if not cache:
-        st.info("暂无缓存结果。点击“刷新风险数据”生成首页仪表盘。")
-        return
+    if cache:
+        render_data_freshness(cache["updated_at"])
+        snapshot = cache["value"]
+        summary = snapshot["summary"]
+        risk_result = snapshot["risk_result"]
+        pnl_rows = snapshot["pnl_rows"]
 
-    st.caption(f"上次刷新时间：{cache['updated_at']}")
-    snapshot = cache["value"]
-    summary = snapshot["summary"]
-    risk_result = snapshot["risk_result"]
-    pnl_rows = snapshot["pnl_rows"]
+        _render_summary(summary, risk_result)
+        _render_risk_items(risk_result.get("items", []))
+        _render_industry_summary(risk_result.get("industry_summary", []))
+        _render_warnings(risk_result.get("warnings", []))
+        _render_actions(risk_result)
+        _render_pnl_table(pnl_rows)
+    else:
+        st.info("暂无风险快照。展开下方“更新数据”生成第一次扫描。")
 
-    _render_summary(summary, risk_result)
-    _render_risk_items(risk_result.get("items", []))
-    _render_industry_summary(risk_result.get("industry_summary", []))
-    _render_warnings(risk_result.get("warnings", []))
-    _render_actions(risk_result)
-    _render_pnl_table(pnl_rows)
+    with st.expander("更新数据与手动价格", expanded=not bool(cache)):
+        col_a, col_b = st.columns(2)
+        fetch_market_price = col_a.checkbox("获取当前行情", value=True)
+        include_kline = col_b.checkbox("检查 K线风险", value=True)
+        total_assets = st.number_input(
+            "账户总资产，可选",
+            min_value=0.0,
+            value=0.0,
+            step=1000.0,
+            help="填写后可判断总股票仓位是否超过 70%。",
+        )
+        manual_prices = {}
+        with st.expander("行情失败时手动填写当前价"):
+            for holding in holdings:
+                manual_value = st.number_input(
+                    f"{holding['stock_name']} ({holding['stock_code']}) 当前价",
+                    min_value=0.0,
+                    value=0.0,
+                    step=0.01,
+                    key=f"manual_price_{holding['id']}",
+                )
+                if manual_value > 0:
+                    manual_prices[int(holding["id"])] = manual_value
+        if st.button("刷新风险数据", type="primary"):
+            with st.spinner("正在拉取行情并计算风险..."):
+                snapshot = build_dashboard_snapshot(
+                    manual_prices=manual_prices,
+                    fetch_market_price=fetch_market_price,
+                    include_kline=include_kline,
+                    total_assets=total_assets if total_assets > 0 else None,
+                )
+                set_json_cache(DASHBOARD_CACHE_KEY, snapshot)
+            st.session_state["dashboard_refresh_message"] = "风险数据已刷新。"
+            st.rerun()
 
 
 def _render_summary(summary: dict, risk_result: dict) -> None:
@@ -190,4 +189,5 @@ def _render_pnl_table(pnl_rows: list[dict]) -> None:
 
 
 if __name__ == "__main__":
+    apply_app_style()
     main()

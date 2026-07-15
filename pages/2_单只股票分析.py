@@ -9,14 +9,15 @@ from services.market_data import get_daily_kline
 from services.portfolio_service import VALID_MARKETS, list_holdings
 from utils.charts import build_kline_figure
 from utils.formatters import format_percent
+from utils.ui import apply_app_style, render_page_header
 
 
 st.set_page_config(page_title="单只股票分析", layout="wide")
+apply_app_style()
 init_db()
 require_login()
 
-st.title("🔍 单只股票分析")
-st.caption("技术指标只用于辅助观察，不构成买入或卖出建议。")
+render_page_header("单只股票分析", "查看价格结构、均线、成交量、MACD 与 RSI，技术指标仅作观察依据。", "⌁")
 
 holdings = list_holdings()
 holding_options = {"手动输入": None}
@@ -70,7 +71,10 @@ if analysis:
     analyzed = analysis["analyzed"]
     signals = analysis["signals"]
 
-    st.success(f"行情来源：{analysis['source']}")
+    if analysis["source"].startswith("缓存"):
+        st.warning(f"当前使用历史缓存：{analysis['source']}")
+    else:
+        st.success(f"行情来源：{analysis['source']}")
 
     col_a, col_b, col_c, col_d = st.columns(4)
     col_a.metric("当前价", f"{signals['current_price']:.2f}")
@@ -78,7 +82,7 @@ if analysis:
     col_c.metric("RSI", f"{signals['rsi']:.2f}" if signals["rsi"] is not None else "-")
     col_d.metric("近5日涨幅", format_percent(signals["five_day_return"]))
 
-    st.subheader("📈 K线走势")
+    st.subheader("K线走势")
     st.caption("红色代表上涨，绿色代表下跌。鼠标悬停可查看同一天的价格、成交量、MACD 和 RSI。")
     st.plotly_chart(
         build_kline_figure(analyzed, ma_windows),
@@ -86,12 +90,12 @@ if analysis:
         config={"displaylogo": False},
     )
 
-    st.subheader("📍 均线位置")
+    st.subheader("均线位置")
     ma_cols = st.columns(4)
     for idx, (name, is_above) in enumerate(signals["above_ma"].items()):
         ma_cols[idx].metric(name, "上方" if is_above else "下方")
 
-    st.subheader("⚠️ 技术信号")
+    st.subheader("技术信号")
     signal_rows = [
         ("是否放量上涨", signals["is_volume_up"]),
         ("是否放量下跌", signals["is_volume_down"]),
@@ -102,7 +106,7 @@ if analysis:
     for label, value in signal_rows:
         st.write(f"- {label}：{'是' if value else '否'}")
 
-    st.subheader("📝 趋势解释")
+    st.subheader("趋势解释")
     st.write(signals["trend_summary"])
     for note in signals["risk_notes"]:
         st.warning(note)
@@ -111,7 +115,7 @@ if analysis:
         st.dataframe(analyzed.tail(30), width="stretch", hide_index=True)
 
     st.divider()
-    st.subheader("🧠 AI 通俗解读")
+    st.subheader("AI 辅助解读")
     stock_context = "\n".join(
         [
             f"股票代码：{analysis['stock_code']}",

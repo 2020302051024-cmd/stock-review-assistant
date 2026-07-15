@@ -8,10 +8,10 @@ from plotly.subplots import make_subplots
 UP_COLOR = "#ef4444"
 DOWN_COLOR = "#16a34a"
 MA_COLORS = {
-    "ma5": "#f59e0b",
-    "ma10": "#2563eb",
-    "ma20": "#7c3aed",
-    "ma60": "#64748b",
+    "ma5": "#d69b2d",
+    "ma10": "#2b6f9f",
+    "ma20": "#5e86a3",
+    "ma60": "#7d8790",
 }
 
 
@@ -95,7 +95,7 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
             y=chart_df["dif"],
             mode="lines",
             name="DIF",
-            line={"width": 1.3, "color": "#2563eb"},
+            line={"width": 1.3, "color": "#2b6f9f"},
         ),
         row=3,
         col=1,
@@ -118,7 +118,7 @@ def build_kline_figure(df: pd.DataFrame, ma_windows: list[int]) -> go.Figure:
             y=chart_df["rsi"],
             mode="lines",
             name="RSI",
-            line={"width": 1.5, "color": "#7c3aed"},
+            line={"width": 1.5, "color": "#245f8f"},
         ),
         row=4,
         col=1,

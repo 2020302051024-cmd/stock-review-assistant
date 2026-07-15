@@ -20,14 +20,15 @@ from services.portfolio_service import (
     normalize_import_dataframe,
     update_holding,
 )
+from utils.ui import apply_app_style, render_page_header
 
 
 st.set_page_config(page_title="持仓管理", layout="wide")
+apply_app_style()
 init_db()
 require_login()
 
-st.title("🗂️ 持仓管理")
-st.caption("维护你的股票持仓。这里不连接券商账户，也不会执行交易。")
+render_page_header("持仓管理", "录入、批量导入并维护你的持仓资料，不连接券商账户。", "▤")
 
 if "add_form_version" not in st.session_state:
     st.session_state["add_form_version"] = 0
@@ -133,7 +134,7 @@ with tab_add:
             st.error(f"新增失败：{exc}")
 
 with tab_import:
-    st.subheader("📥 表格批量导入")
+    st.subheader("表格批量导入")
     st.caption("适合一次录入多只股票。导入只写入本系统数据库，不会连接券商或执行交易。")
 
     template_df = build_import_template_dataframe()

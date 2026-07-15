@@ -7,7 +7,7 @@ import pandas as pd
 
 from config import settings
 from services.indicator_service import analyze_kline
-from services.market_data import get_daily_kline
+from services.market_data import MarketDataResult, get_daily_kline
 
 
 RISK_LEVELS = ["正常", "注意", "风险预警", "严重风险"]
@@ -80,6 +80,7 @@ def analyze_portfolio_risks(
     pnl_df: pd.DataFrame,
     total_assets: float | None = None,
     include_kline: bool = True,
+    market_results: dict[int, MarketDataResult] | None = None,
 ) -> dict[str, Any]:
     items: list[RiskItem] = []
     warnings: list[str] = []
@@ -104,7 +105,7 @@ def analyze_portfolio_risks(
         warnings.append("未填写账户总资产，总股票仓位风险暂不判断。")
 
     if include_kline:
-        _add_kline_risks(items, pnl_df, warnings)
+        _add_kline_risks(items, pnl_df, warnings, market_results or {})
 
     overall_level = highest_level([item.level for item in items])
     return {
@@ -184,7 +185,9 @@ def _add_industry_risks(items: list[RiskItem], pnl_df: pd.DataFrame, position_ba
 
     df = pnl_df.copy()
     df["industry"] = df["industry"].fillna("").replace("", "未填写")
-    df["risk_value"] = df["market_value"].fillna(df["cost"])
+    market_value = pd.to_numeric(df["market_value"], errors="coerce")
+    cost = pd.to_numeric(df["cost"], errors="coerce").fillna(0)
+    df["risk_value"] = market_value.fillna(cost)
     grouped = df.groupby("industry", as_index=False)["risk_value"].sum()
     grouped["ratio"] = grouped["risk_value"] / position_base
 
@@ -207,12 +210,20 @@ def _add_industry_risks(items: list[RiskItem], pnl_df: pd.DataFrame, position_ba
     return summary
 
 
-def _add_kline_risks(items: list[RiskItem], pnl_df: pd.DataFrame, warnings: list[str]) -> None:
+def _add_kline_risks(
+    items: list[RiskItem],
+    pnl_df: pd.DataFrame,
+    warnings: list[str],
+    market_results: dict[int, MarketDataResult],
+) -> None:
     for _, row in pnl_df.iterrows():
         stock_code = str(row["stock_code"])
         stock_name = str(row["stock_name"])
         market = str(row["market"])
-        result = get_daily_kline(stock_code, market, days=90)
+        holding_id = int(row["id"])
+        result = market_results.get(holding_id)
+        if result is None or result.data is None or len(result.data) < 60:
+            result = get_daily_kline(stock_code, market, days=90)
         if not result.ok or result.data is None:
             warnings.append(f"{stock_name}({stock_code}) K线风险无法判断：{result.error}")
             continue
@@ -273,4 +284,3 @@ def _is_three_day_down(df: pd.DataFrame) -> bool:
         return False
     closes = df["close"].tail(4).tolist()
     return closes[1] < closes[0] and closes[2] < closes[1] and closes[3] < closes[2]
-

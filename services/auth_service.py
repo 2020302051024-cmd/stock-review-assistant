@@ -90,8 +90,19 @@ def require_login() -> dict[str, Any]:
     user = current_user()
     if user:
         with st.sidebar:
+            st.markdown("### 股票复盘助手")
+            st.caption("个人风险与复盘工作台")
+            st.page_link("app.py", label="风险仪表盘", icon="🏠")
+            st.page_link("pages/6_暴雷风险中心.py", label="暴雷风险中心", icon="🚨")
+            st.page_link("pages/1_持仓管理.py", label="持仓管理", icon="📁")
+            st.page_link("pages/2_单只股票分析.py", label="单股分析", icon="📈")
+            st.page_link("pages/3_财报公告分析.py", label="财报与消息", icon="📰")
+            st.page_link("pages/4_每日复盘报告.py", label="每日复盘", icon="📋")
+            st.page_link("pages/7_交易日志.py", label="交易日志", icon="✍️")
+            st.page_link("pages/5_系统设置.py", label="系统设置", icon="⚙️")
+            st.divider()
             st.caption(f"已登录：{user['username']}")
-            if st.button("退出登录", key="sidebar_logout"):
+            if st.button("退出登录", key="sidebar_logout", use_container_width=True):
                 logout()
                 st.rerun()
         return user
@@ -104,13 +115,15 @@ def require_login() -> dict[str, Any]:
 
 
 def _render_first_user_setup() -> None:
-    st.title("创建管理员账号")
-    st.info("首次使用需要先创建一个登录账号。请记住这个账号，后续部署到公网后所有页面都会被登录保护。")
-    with st.form("first_user_setup"):
-        username = st.text_input("用户名", value="admin")
-        password = st.text_input("密码", type="password")
-        confirm = st.text_input("确认密码", type="password")
-        submitted = st.form_submit_button("创建账号")
+    _, center, _ = st.columns([1, 1.15, 1])
+    with center:
+        st.markdown("## 创建第一个账号")
+        st.caption("该账号的数据、API 和推送配置将与后续账号相互隔离。")
+        with st.form("first_user_setup"):
+            username = st.text_input("用户名", value="admin")
+            password = st.text_input("密码", type="password")
+            confirm = st.text_input("确认密码", type="password")
+            submitted = st.form_submit_button("创建账号", type="primary", use_container_width=True)
     if submitted:
         if password != confirm:
             st.error("两次密码不一致")
@@ -124,12 +137,14 @@ def _render_first_user_setup() -> None:
 
 
 def _render_login_form() -> None:
-    st.title("登录股票复盘助手")
-    st.caption("请输入账号密码后继续使用。")
-    with st.form("login_form"):
-        username = st.text_input("用户名")
-        password = st.text_input("密码", type="password")
-        submitted = st.form_submit_button("登录")
+    _, center, _ = st.columns([1, 1.05, 1])
+    with center:
+        st.markdown("## 股票复盘助手")
+        st.caption("登录后查看你的持仓、风险扫描、报告与交易日志。")
+        with st.form("login_form"):
+            username = st.text_input("用户名")
+            password = st.text_input("密码", type="password")
+            submitted = st.form_submit_button("登录", type="primary", use_container_width=True)
     if submitted:
         user = authenticate_user(username, password)
         if not user:
@@ -137,4 +152,3 @@ def _render_login_form() -> None:
             return
         st.session_state["auth_user"] = user
         st.rerun()
-

@@ -6,6 +6,7 @@ from typing import Any
 import pandas as pd
 
 from database.db import db_connection
+from services.user_context import resolve_user_id
 
 
 VALID_MARKETS = ["A股", "港股", "美股"]
@@ -127,17 +128,18 @@ def _clean_holding_payload(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def add_holding(data: dict[str, Any]) -> int:
+def add_holding(data: dict[str, Any], user_id: int | None = None) -> int:
     payload = _clean_holding_payload(data)
+    payload["user_id"] = resolve_user_id(user_id)
     with db_connection() as conn:
         cursor = conn.execute(
             """
             INSERT INTO holdings (
-                stock_code, stock_name, market, buy_price, quantity, buy_date,
+                user_id, stock_code, stock_name, market, buy_price, quantity, buy_date,
                 industry, investment_logic, is_watchlist, note
             )
             VALUES (
-                :stock_code, :stock_name, :market, :buy_price, :quantity, :buy_date,
+                :user_id, :stock_code, :stock_name, :market, :buy_price, :quantity, :buy_date,
                 :industry, :investment_logic, :is_watchlist, :note
             )
             """,
@@ -211,7 +213,7 @@ def normalize_import_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     return normalized
 
 
-def batch_add_holdings(df: pd.DataFrame) -> dict[str, Any]:
+def batch_add_holdings(df: pd.DataFrame, user_id: int | None = None) -> dict[str, Any]:
     """Import holdings row by row and return successes plus row-level errors."""
     normalized = normalize_import_dataframe(df)
     successes = []
@@ -222,7 +224,7 @@ def batch_add_holdings(df: pd.DataFrame) -> dict[str, Any]:
         try:
             if pd.isna(payload.get("buy_date")):
                 raise ValueError("买入日期格式不正确")
-            holding_id = add_holding(payload)
+            holding_id = add_holding(payload, user_id=user_id)
             successes.append(
                 {
                     "row": row_number,
@@ -250,9 +252,10 @@ def _parse_watchlist_value(value: Any) -> bool:
     return text in {"1", "true", "yes", "y", "是", "重点", "重点监控"}
 
 
-def update_holding(holding_id: int, data: dict[str, Any]) -> None:
+def update_holding(holding_id: int, data: dict[str, Any], user_id: int | None = None) -> None:
     payload = _clean_holding_payload(data)
     payload["id"] = int(holding_id)
+    payload["user_id"] = resolve_user_id(user_id)
     with db_connection() as conn:
         cursor = conn.execute(
             """
@@ -268,7 +271,7 @@ def update_holding(holding_id: int, data: dict[str, Any]) -> None:
                 is_watchlist = :is_watchlist,
                 note = :note,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = :id
+            WHERE id = :id AND user_id = :user_id
             """,
             payload,
         )
@@ -276,33 +279,44 @@ def update_holding(holding_id: int, data: dict[str, Any]) -> None:
             raise ValueError("未找到要修改的持仓")
 
 
-def delete_holding(holding_id: int) -> None:
+def delete_holding(holding_id: int, user_id: int | None = None) -> None:
+    owner_id = resolve_user_id(user_id)
     with db_connection() as conn:
-        cursor = conn.execute("DELETE FROM holdings WHERE id = ?", (int(holding_id),))
+        cursor = conn.execute(
+            "DELETE FROM holdings WHERE id = ? AND user_id = ?",
+            (int(holding_id), owner_id),
+        )
         if cursor.rowcount == 0:
             raise ValueError("未找到要删除的持仓")
 
 
-def get_holding(holding_id: int) -> dict[str, Any] | None:
+def get_holding(holding_id: int, user_id: int | None = None) -> dict[str, Any] | None:
+    owner_id = resolve_user_id(user_id)
     with db_connection() as conn:
-        row = conn.execute("SELECT * FROM holdings WHERE id = ?", (int(holding_id),)).fetchone()
+        row = conn.execute(
+            "SELECT * FROM holdings WHERE id = ? AND user_id = ?",
+            (int(holding_id), owner_id),
+        ).fetchone()
     return dict(row) if row else None
 
 
-def list_holdings() -> list[dict[str, Any]]:
+def list_holdings(user_id: int | None = None) -> list[dict[str, Any]]:
+    owner_id = resolve_user_id(user_id)
     with db_connection() as conn:
         rows = conn.execute(
             """
             SELECT *
             FROM holdings
+            WHERE user_id = ?
             ORDER BY created_at DESC, id DESC
-            """
+            """,
+            (owner_id,),
         ).fetchall()
     return [dict(row) for row in rows]
 
 
-def holdings_dataframe() -> pd.DataFrame:
-    rows = list_holdings()
+def holdings_dataframe(user_id: int | None = None) -> pd.DataFrame:
+    rows = list_holdings(user_id=user_id)
     if not rows:
         return pd.DataFrame(
             columns=[

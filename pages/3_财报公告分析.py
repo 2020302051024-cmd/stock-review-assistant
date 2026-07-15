@@ -13,6 +13,7 @@ from services.market_digest_service import (
 from services.news_fetch_service import fetch_digest_sources
 from services.report_service import list_ai_reports, save_ai_report
 from services.risk_service import scan_financial_text
+from utils.ui import apply_app_style, render_page_header
 
 
 def _render_risk_scan(risk_scan: dict) -> None:
@@ -28,11 +29,11 @@ def _render_risk_scan(risk_scan: dict) -> None:
 
 
 st.set_page_config(page_title="财报公告分析", layout="wide")
+apply_app_style()
 init_db()
 require_login()
 
-st.title("📰 财报 / 公告 / 新闻分析")
-st.caption("支持单篇摘要，也支持按持仓行业和关注领域生成每日消息面汇总。")
+render_page_header("财报与消息分析", "提炼公告、财报和新闻中的业绩影响、风险信号与关注重点。", "▧")
 
 client = DeepSeekClient()
 
@@ -51,7 +52,7 @@ with tab_single:
             st.stop()
 
         risk_scan = scan_financial_text(source_text)
-        st.subheader("🚨 暴雷关键词扫描")
+        st.subheader("暴雷关键词扫描")
         _render_risk_scan(risk_scan)
 
         try:
@@ -61,7 +62,7 @@ with tab_single:
                     system_prompt=FINANCIAL_REPORT_SYSTEM_PROMPT,
                     temperature=0.15,
                 )
-            st.subheader("🧠 AI 摘要")
+            st.subheader("AI 摘要")
             st.markdown(result)
             saved_result = f"关键词风险等级：{risk_scan['level']}\n命中关键词：{risk_scan['summary']}\n\n{result}"
             report_id = save_ai_report("financial_report", title or "财报公告分析", source_text, saved_result)
@@ -72,7 +73,7 @@ with tab_single:
             st.error(f"生成失败：{exc}")
 
 with tab_digest:
-    st.subheader("🗞️ 每日消息面汇总")
+    st.subheader("每日消息面汇总")
     st.caption("用于每天把持仓股票、所属行业、关注领域和当天材料合成一份汇总报告。")
 
     portfolio_context = build_portfolio_digest_context()
@@ -133,7 +134,7 @@ with tab_digest:
             st.error(f"生成失败：{exc}")
 
 with tab_history:
-    st.subheader("📚 历史摘要")
+    st.subheader("历史摘要")
     reports = list_ai_reports("financial_report", limit=10)
     if not reports:
         st.info("暂无单篇摘要。")
@@ -142,7 +143,7 @@ with tab_history:
             with st.expander(f"{report['created_at']} - {report['title']}"):
                 st.markdown(report["ai_result"])
 
-    st.subheader("📦 历史每日消息汇总")
+    st.subheader("历史每日消息汇总")
     digest_reports = list_ai_reports("market_digest", limit=10)
     if not digest_reports:
         st.info("暂无每日消息汇总。")

@@ -22,6 +22,7 @@ def get_connection() -> sqlite3.Connection:
     ensure_data_dir()
     conn = sqlite3.connect(settings.DATABASE_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 
@@ -53,6 +54,7 @@ def migrate_db(conn: sqlite3.Connection) -> None:
         row["name"] for row in conn.execute("PRAGMA table_info(holdings)").fetchall()
     }
     migrations = {
+        "user_id": "ALTER TABLE holdings ADD COLUMN user_id INTEGER",
         "industry": "ALTER TABLE holdings ADD COLUMN industry TEXT DEFAULT ''",
         "investment_logic": "ALTER TABLE holdings ADD COLUMN investment_logic TEXT DEFAULT ''",
         "is_watchlist": "ALTER TABLE holdings ADD COLUMN is_watchlist INTEGER NOT NULL DEFAULT 0",
@@ -60,6 +62,32 @@ def migrate_db(conn: sqlite3.Connection) -> None:
     for column, statement in migrations.items():
         if column not in holding_columns:
             conn.execute(statement)
+
+    report_columns = {
+        row["name"] for row in conn.execute("PRAGMA table_info(ai_reports)").fetchall()
+    }
+    if "user_id" not in report_columns:
+        conn.execute("ALTER TABLE ai_reports ADD COLUMN user_id INTEGER")
+
+    owner = conn.execute(
+        "SELECT id FROM app_users WHERE is_active = 1 ORDER BY id ASC LIMIT 1"
+    ).fetchone()
+    if not owner:
+        return
+
+    owner_id = int(owner["id"])
+    conn.execute("UPDATE holdings SET user_id = ? WHERE user_id IS NULL", (owner_id,))
+    conn.execute("UPDATE ai_reports SET user_id = ? WHERE user_id IS NULL", (owner_id,))
+    conn.execute(
+        """
+        INSERT OR IGNORE INTO user_settings (user_id, key, value, updated_at)
+        SELECT ?, key, value, updated_at FROM app_settings
+        """,
+        (owner_id,),
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_holdings_user_id ON holdings(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_user_id ON ai_reports(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_trade_logs_user_id ON trade_logs(user_id)")
 
 
 if __name__ == "__main__":
