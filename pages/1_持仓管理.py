@@ -123,7 +123,7 @@ tab_add, tab_import, tab_edit, tab_delete, tab_list = st.tabs(["新增", "批量
 with tab_add:
     with st.form("add_holding_form"):
         payload = holding_form(f"add_{st.session_state['add_form_version']}")
-        submitted = st.form_submit_button("新增持仓")
+        submitted = st.form_submit_button("新增持仓", type="primary")
     if submitted:
         try:
             holding_id = add_holding(payload)
@@ -192,7 +192,7 @@ with tab_edit:
         selected = get_holding(options[selected_label])
         with st.form("edit_holding_form"):
             payload = holding_form("edit", selected)
-            submitted = st.form_submit_button("保存修改")
+            submitted = st.form_submit_button("保存修改", type="primary")
         if submitted:
             try:
                 update_holding(options[selected_label], payload)

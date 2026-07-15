@@ -36,7 +36,7 @@ with st.expander("创建朋友账号"):
         new_username = st.text_input("新用户名")
         new_password = st.text_input("新密码", type="password")
         new_confirm = st.text_input("确认新密码", type="password")
-        create_submitted = st.form_submit_button("创建账号")
+        create_submitted = st.form_submit_button("创建账号", type="primary")
     if create_submitted:
         if new_password != new_confirm:
             st.error("两次密码不一致")
@@ -107,7 +107,7 @@ with st.form("deepseek_config_form"):
         step=1,
         help="遇到超时、限流或临时网络错误时自动重试。建议 1 次。",
     )
-    save_deepseek = st.form_submit_button("保存 DeepSeek 配置")
+    save_deepseek = st.form_submit_button("保存 DeepSeek 配置", type="primary")
 
 if save_deepseek:
     save_deepseek_config(api_key, base_url, model, thinking, reasoning_effort, timeout_seconds, max_retries)
@@ -148,7 +148,7 @@ public_url = st.text_input(
     placeholder="例如：https://your-app.streamlit.app 或 https://xxxx.trycloudflare.com",
 )
 col_url_save, col_qr = st.columns([1, 1])
-if col_url_save.button("保存公网地址"):
+if col_url_save.button("保存公网地址", type="primary"):
     save_public_app_url(public_url)
     st.success("公网地址已保存。")
 if public_url.strip():
@@ -182,7 +182,7 @@ token = st.text_input(
 enabled = st.checkbox("启用微信推送", value=get_bool_setting("push_enabled", False))
 
 col_save, col_test = st.columns(2)
-if col_save.button("保存推送配置"):
+if col_save.button("保存推送配置", type="primary"):
     set_setting("push_provider", provider)
     set_setting("push_token", token)
     set_setting("push_enabled", "true" if enabled else "false")
@@ -232,7 +232,7 @@ with st.form("auto_push_config_form"):
         step=1000.0,
         help="填写后可判断总股票仓位是否超过阈值。",
     )
-    save_auto_push = st.form_submit_button("保存自动推送配置")
+    save_auto_push = st.form_submit_button("保存自动推送配置", type="primary")
 
 if save_auto_push:
     save_auto_push_config(

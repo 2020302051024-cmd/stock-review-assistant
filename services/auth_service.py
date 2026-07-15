@@ -90,8 +90,18 @@ def require_login() -> dict[str, Any]:
     user = current_user()
     if user:
         with st.sidebar:
-            st.markdown("### 股票复盘助手")
-            st.caption("个人风险与复盘工作台")
+            st.markdown(
+                """
+                <div class="app-brand">
+                  <div class="app-brand-mark">复盘</div>
+                  <div>
+                    <div class="app-brand-name">股票复盘助手</div>
+                    <div class="app-brand-note">个人风险与复盘工作台</div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
             st.page_link("app.py", label="风险仪表盘", icon="🏠")
             st.page_link("pages/6_暴雷风险中心.py", label="暴雷风险中心", icon="🚨")
             st.page_link("pages/1_持仓管理.py", label="持仓管理", icon="📁")
